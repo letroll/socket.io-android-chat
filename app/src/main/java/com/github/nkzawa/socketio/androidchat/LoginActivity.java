@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 /**
  * A login screen that offers login via username.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends Activity implements Constant {
 
     private EditText mUsernameView;
 
@@ -32,7 +32,7 @@ public class LoginActivity extends Activity {
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://chat.socket.io");
+            mSocket = IO.socket(SERVER_URL);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

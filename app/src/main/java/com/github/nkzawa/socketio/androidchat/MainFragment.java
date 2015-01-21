@@ -39,7 +39,7 @@ import java.util.List;
 /**
  * A chat fragment containing messages view and input form.
  */
-public class MainFragment extends Fragment {
+public class MainFragment extends Fragment implements Constant{
 
     private static final int REQUEST_LOGIN = 0;
 
@@ -57,7 +57,7 @@ public class MainFragment extends Fragment {
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://chat.socket.io");
+            mSocket = IO.socket(SERVER_URL);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
