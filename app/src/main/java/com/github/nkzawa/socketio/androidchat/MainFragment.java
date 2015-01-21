@@ -10,20 +10,29 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.view.*;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -36,13 +45,15 @@ public class MainFragment extends Fragment {
 
     private static final int TYPING_TIMER_LENGTH = 600;
 
+    /** View **/
     private RecyclerView mMessagesView;
     private EditText mInputMessageView;
+
+    /** Object **/
     private List<Message> mMessages = new ArrayList<Message>();
+    private HashMap<String,Emitter.Listener> listEmitter = new HashMap<>();
     private RecyclerView.Adapter mAdapter;
-    private boolean mTyping = false;
     private Handler mTypingHandler = new Handler();
-    private String mUsername;
     private Socket mSocket;
     {
         try {
@@ -51,6 +62,10 @@ public class MainFragment extends Fragment {
             throw new RuntimeException(e);
         }
     }
+
+    /** VARIABLES **/
+    private boolean mTyping = false;
+    private String mUsername;
 
     public MainFragment() {
         super();
@@ -68,16 +83,29 @@ public class MainFragment extends Fragment {
 
         setHasOptionsMenu(true);
 
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectError);
-        mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        mSocket.on("new message", onNewMessage);
-        mSocket.on("user joined", onUserJoined);
-        mSocket.on("user left", onUserLeft);
-        mSocket.on("typing", onTyping);
-        mSocket.on("stop typing", onStopTyping);
+        listen(Socket.EVENT_CONNECT_ERROR, onConnectError);
+        listen(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
+        listen("new message", onNewMessage);
+        listen("user joined", onUserJoined);
+        listen("user left", onUserLeft);
+        listen("typing", onTyping);
+        listen("stop typing", onStopTyping);
         mSocket.connect();
 
         startSignIn();
+    }
+
+    private void listen(String event, Emitter.Listener listener) {
+        if(!listEmitter.containsKey(event)) {
+            listEmitter.put(event,listener);
+            mSocket.on(event, listener);
+        }
+    }
+
+    private void stopListening(){
+        for (String key: listEmitter.keySet()) {
+            mSocket.off(key, listEmitter.get(key));
+        }
     }
 
     @Override
@@ -91,13 +119,8 @@ public class MainFragment extends Fragment {
         super.onDestroy();
 
         mSocket.disconnect();
-        mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectError);
-        mSocket.off(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        mSocket.off("new message", onNewMessage);
-        mSocket.off("user joined", onUserJoined);
-        mSocket.off("user left", onUserLeft);
-        mSocket.off("typing", onTyping);
-        mSocket.off("stop typing", onStopTyping);
+
+        stopListening();
     }
 
     @Override
